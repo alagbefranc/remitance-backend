@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:6.0
+    container_name: remittance-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: remittance-app
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - remittance-network
+
+  # Backend API
+  api:
+    build: .
+    container_name: remittance-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/remittance-app?authSource=admin
+      JWT_SECRET: remittance-app-super-secret-jwt-key-dev-only
+      JWT_EXPIRES_IN: 7d
+      NIUM_API_URL: https://gateway.nium.com/api/v1
+      NIUM_API_KEY: placeholder-api-key-from-docs
+      NIUM_ENVIRONMENT: sandbox
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:19006
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+    networks:
+      - remittance-network
+
+  # MongoDB Express (Database admin interface)
+  mongo-express:
+    image: mongo-express:1.0.0-alpha
+    container_name: remittance-mongo-express
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - remittance-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  remittance-network:
+    driver: bridge
