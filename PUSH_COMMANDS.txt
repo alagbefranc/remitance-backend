@@ -1,0 +1,10 @@
+# Run these commands after creating your GitHub repository
+
+# Add your GitHub repository as remote (replace YOUR_USERNAME with your actual GitHub username)
+git remote add origin https://github.com/YOUR_USERNAME/remittance-backend.git
+
+# Push all code to GitHub
+git push -u origin main
+
+# Verify the push was successful
+git remote -v
